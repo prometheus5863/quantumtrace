@@ -1,0 +1,112 @@
+/* src/styles/narrative.module.css */
+
+.canvasWrapper {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.scrollContainer {
+  position: relative;
+  height: 500vh;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.section {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 0 0 72px 72px;
+  pointer-events: none;
+  position: relative;
+}
+
+.title {
+  font-size: clamp(2.8rem, 5.5vw, 5.5rem);
+  font-weight: 300;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  color: #ffffff;
+  max-width: 700px;
+}
+
+.desc {
+  margin-top: 20px;
+  max-width: 460px;
+  font-size: 1rem;
+  line-height: 1.75;
+  color: rgba(255, 255, 255, 0.55);
+  font-weight: 300;
+}
+
+.learnMoreBtn {
+  position: absolute;
+  bottom: 72px;
+  right: 72px;
+  pointer-events: auto;
+  padding: 13px 28px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 2px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  transition: background 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+}
+
+.learnMoreBtn:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.55);
+  color: #ffffff;
+}
+
+.domainBadge {
+  position: absolute;
+  top: 40px;
+  left: 72px;
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.3);
+  pointer-events: none;
+}
+
+.layerCounter {
+  position: absolute;
+  top: 40px;
+  right: 72px;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.2);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+.progressDots {
+  position: fixed;
+  right: 28px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  transition: background 0.4s ease, transform 0.4s ease;
+}
+
+.dotActive {
+  background: rgba(255, 255, 255, 0.9);
+  transform: scale(1.4);
+}
