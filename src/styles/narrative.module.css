@@ -1,45 +1,95 @@
 /* src/styles/narrative.module.css */
 
-.canvasWrapper {
+.overlay {
   position: fixed;
   inset: 0;
-  z-index: 1;
-  pointer-events: none;
-}
-
-.scrollContainer {
-  position: relative;
-  height: 500vh;
   z-index: 10;
   pointer-events: none;
 }
 
 .section {
-  height: 100vh;
+  position: absolute;
+  inset: 0;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  padding: 0 0 72px 72px;
+  padding: 0 72px 72px;
+  opacity: 0;
+  visibility: hidden;
+  will-change: opacity, transform;
+}
+
+.brand {
+  position: fixed;
+  top: 36px;
+  left: 72px;
+  z-index: 20;
+  font-size: 0.72rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.75);
   pointer-events: none;
-  position: relative;
+}
+.brand span { color: rgba(255, 255, 255, 0.3); }
+
+.layerCounter {
+  position: fixed;
+  top: 36px;
+  right: 72px;
+  z-index: 20;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.35);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+.domainBadge {
+  margin-bottom: 18px;
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
 }
 
 .title {
-  font-size: clamp(2.8rem, 5.5vw, 5.5rem);
+  font-size: clamp(2.4rem, 5.5vw, 5.5rem);
   font-weight: 300;
   letter-spacing: -0.03em;
   line-height: 1.05;
   color: #ffffff;
-  max-width: 700px;
+  max-width: 760px;
 }
 
 .desc {
   margin-top: 20px;
-  max-width: 460px;
+  max-width: 480px;
   font-size: 1rem;
   line-height: 1.75;
-  color: rgba(255, 255, 255, 0.55);
+  color: rgba(255, 255, 255, 0.6);
   font-weight: 300;
+}
+
+.facts {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 36px;
+  margin-top: 26px;
+  max-width: 640px;
+}
+.facts li { display: flex; flex-direction: column; gap: 3px; }
+.facts strong {
+  font-size: 1.05rem;
+  font-weight: 400;
+  color: #ffffff;
+  font-variant-numeric: tabular-nums;
+}
+.facts span {
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.4);
 }
 
 .learnMoreBtn {
@@ -48,65 +98,71 @@
   right: 72px;
   pointer-events: auto;
   padding: 13px 28px;
-  background: transparent;
+  background: rgba(0, 0, 16, 0.35);
   border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 2px;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.85);
   font-size: 0.8rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   transition: background 0.25s ease, border-color 0.25s ease, color 0.25s ease;
 }
-
 .learnMoreBtn:hover {
-  background: rgba(255, 255, 255, 0.07);
-  border-color: rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--accent);
   color: #ffffff;
-}
-
-.domainBadge {
-  position: absolute;
-  top: 40px;
-  left: 72px;
-  font-size: 0.7rem;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.3);
-  pointer-events: none;
-}
-
-.layerCounter {
-  position: absolute;
-  top: 40px;
-  right: 72px;
-  font-size: 0.7rem;
-  letter-spacing: 0.1em;
-  color: rgba(255, 255, 255, 0.2);
-  font-variant-numeric: tabular-nums;
-  pointer-events: none;
 }
 
 .progressDots {
   position: fixed;
-  right: 28px;
+  right: 22px;
   top: 50%;
   transform: translateY(-50%);
   z-index: 50;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 4px;
+}
+.dot {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  position: relative;
+}
+.dot::after {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+  transition: background 0.3s ease, transform 0.3s ease;
+}
+.dot:hover::after { background: rgba(255, 255, 255, 0.6); }
+.dotActive::after { background: rgba(255, 255, 255, 0.95); transform: scale(1.5); }
+
+.scrollHint {
+  position: fixed;
+  left: 50%;
+  bottom: 26px;
+  transform: translateX(-50%);
+  z-index: 20;
+  font-size: 0.65rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.4);
+  transition: opacity 0.4s ease;
   pointer-events: none;
 }
+.scrollHintHidden { opacity: 0; }
 
-.dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
-  transition: background 0.4s ease, transform 0.4s ease;
-}
-
-.dotActive {
-  background: rgba(255, 255, 255, 0.9);
-  transform: scale(1.4);
+@media (max-width: 720px) {
+  .section { padding: 0 24px 96px; }
+  .brand { left: 24px; top: 24px; }
+  .layerCounter { right: 24px; top: 24px; }
+  .learnMoreBtn { right: auto; left: 24px; bottom: 30px; }
+  .facts { gap: 10px 22px; }
+  .progressDots { right: 4px; }
+  .scrollHint { display: none; }
 }

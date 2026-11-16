@@ -1,15 +1,17 @@
 // src/pages/sim/FridgeSim.jsx
 import { useRef, useState, useEffect, useMemo, useCallback } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Environment } from '@react-three/drei';
+import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
+import StudioEnv from '../../components/StudioEnv';
 
+// Plates of a dilution refrigerator, warmest at the top. Temperatures are typical operating values.
 const STAGES = [
-  { name: 'Still Plate',   y: 2.4,  radius: 3.0,  temp: '4K',    color: '#ffd700' },
-  { name: 'Cold Plate',    y: 1.0,  radius: 2.4,  temp: '800mK', color: '#ffcc00' },
-  { name: '100mK Plate',   y: -0.2, radius: 1.85, temp: '100mK', color: '#ffb700' },
-  { name: 'Still Plate 2', y: -1.3, radius: 1.35, temp: '50mK',  color: '#ffa500' },
-  { name: 'MXC Plate',     y: -2.3, radius: 0.9,  temp: '15mK',  color: '#ff8c00' },
+  { name: '50 K Plate',      y: 2.4,  radius: 3.0,  temp: '50 K',   color: '#ffd700' },
+  { name: '4 K Plate',       y: 1.0,  radius: 2.4,  temp: '4 K',    color: '#ffcc00' },
+  { name: 'Still',           y: -0.2, radius: 1.85, temp: '800 mK', color: '#ffb700' },
+  { name: 'Cold Plate',      y: -1.3, radius: 1.35, temp: '100 mK', color: '#ffa500' },
+  { name: 'Mixing Chamber',  y: -2.3, radius: 0.9,  temp: '15 mK',  color: '#ff8c00' },
 ];
 
 function StagePlate({ stage, stageIndex, coolingProgress, totalStages }) {
@@ -123,7 +125,7 @@ function FridgeScene({ coolingActive, coolingProgress }) {
       <pointLight position={[0, -2.8, 0]} color="#00aaff" intensity={2.5} distance={5} />
       <pointLight position={[3, 1, 3]} color="#ff6600" intensity={0.4} distance={8} />
       <pointLight ref={sweepLightRef} position={[0, 3, 0]} intensity={0} distance={4} />
-      <Environment preset="warehouse" />
+      <StudioEnv look="warehouse" />
       
       {/* Outer shield */}
       <mesh position={[0, 0, 0]}>
@@ -190,7 +192,7 @@ function ControlPanel({ coolingActive, onActivateCooling, coolingProgress }) {
         <div style={{ fontSize:11, letterSpacing:'0.15em', color:'#00d4ff', fontWeight:600,
           textTransform:'uppercase', marginBottom:4 }}>DILUTION REFRIGERATOR</div>
         <div style={{ fontSize:9, letterSpacing:'0.1em', color:'rgba(0,212,255,0.6)',
-          marginBottom:16, textTransform:'uppercase' }}>OXFORD INSTRUMENTS KF-3000</div>
+          marginBottom:16, textTransform:'uppercase' }}>FIVE PLATES, 50 K TO 15 mK</div>
         
         <div style={{ background:'rgba(0,0,0,0.3)', borderRadius:8, padding:12, marginBottom:16 }}>
           <div style={{ fontSize:9, letterSpacing:'0.1em', color:'rgba(255,255,255,0.5)',
@@ -231,7 +233,7 @@ function ControlPanel({ coolingActive, onActivateCooling, coolingProgress }) {
         </button>
 
         <div style={{ marginTop:16, display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
-          {[['HELIUM-3 FLOW','NOMINAL'],['MIXING CHAMBER','ISOLATED'],['VIBRATION ISO','ACTIVE']].map(([label,val],i)=>(
+          {[['COOLANT','³He / ⁴He MIX'],['COLDEST POINT','MIXING CHAMBER'],['PRE-COOLING','PULSE TUBE, 50 K AND 4 K']].map(([label,val],i)=>(
             <div key={i} style={{ background:'rgba(0,0,0,0.2)', padding:'8px 10px',
               borderRadius:4, gridColumn: i===2 ? 'span 2' : undefined }}>
               <div style={{ fontSize:8, color:'rgba(255,255,255,0.4)', letterSpacing:'0.05em', marginBottom:2 }}>{label}</div>
@@ -267,7 +269,7 @@ export default function FridgeSim() {
 
   return (
     <div style={{ width:'100vw', height:'100vh', background:'#000', position:'relative', overflow:'hidden' }}>
-      <button onClick={() => window.history.back()} style={{
+      <button onClick={() => { window.location.hash = '#/'; }} style={{
         position:'fixed', top:16, left:16, zIndex:200, padding:'7px 16px',
         background:'transparent', border:'1px solid rgba(255,255,255,0.15)',
         borderRadius:2, color:'rgba(255,255,255,0.5)', fontSize:'0.75rem',

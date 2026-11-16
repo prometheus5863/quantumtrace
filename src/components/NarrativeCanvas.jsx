@@ -1,17 +1,19 @@
 import { useRef, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { RoundedBox, Environment } from '@react-three/drei';
+import { RoundedBox } from '@react-three/drei';
 import * as THREE from 'three';
 import { activeLayerId, scrollProgressMap } from '../constants/layers';
 import ParticleField from './ParticleField';
+import StudioEnv from './StudioEnv';
+import { buildHeavyHex } from '../lib/heavyHex';
 
 // --- SCENE A: NarrativeCasing ---
-function NarrativeCasing({ zoomProgress }) {
+function NarrativeCasing() {
   const groupRef = useRef();
   
   useFrame(() => {
     if (!groupRef.current) return;
-    const scaleBoost = 1 + zoomProgress * 0.08;
+    const scaleBoost = 1 + scrollProgressMap.casing * 0.08;
     groupRef.current.scale.setScalar(scaleBoost);
   });
 
@@ -63,7 +65,7 @@ const FRIDGE_STAGES = [
   { y: -1.9, radius: 0.7, color: '#ff8c00' },
 ];
 
-function NarrativeFridge({ zoomProgress }) {
+function NarrativeFridge() {
   const groupRef = useRef();
   const goldMaterial = useMemo(() => new THREE.MeshStandardMaterial({
     color: '#ffd700',
@@ -74,7 +76,7 @@ function NarrativeFridge({ zoomProgress }) {
 
   useFrame(() => {
     if (!groupRef.current) return;
-    const scaleBoost = 1 + zoomProgress * 0.08;
+    const scaleBoost = 1 + scrollProgressMap.fridge * 0.08;
     groupRef.current.scale.setScalar(scaleBoost);
   });
 
@@ -84,7 +86,7 @@ function NarrativeFridge({ zoomProgress }) {
         <group key={i}>
           <mesh position={[0, stage.y, 0]}>
             <cylinderGeometry args={[stage.radius, stage.radius, 0.05, 64]} />
-            <primitive object={goldMaterial} attach="material" color={stage.color} />
+            <primitive object={goldMaterial} attach="material" />
           </mesh>
           
           {i < FRIDGE_STAGES.length - 1 && [...Array(6)].map((_, j) => {
@@ -121,23 +123,11 @@ function NarrativeFridge({ zoomProgress }) {
 }
 
 // --- SCENE C: NarrativeChip ---
-function generateHeavyHexPositions() {
-  const positions = [];
-  const LATTICE_SIZE = 6;
-  const SPACING = 1.2;
-  for (let r = 0; r < LATTICE_SIZE; r++) {
-    for (let col = 0; col < LATTICE_SIZE; col++) {
-      const x = (col - LATTICE_SIZE / 2) * SPACING;
-      const z = (r - LATTICE_SIZE / 2) * SPACING;
-      const type = (r + col) % 2 === 0 ? 'data' : 'ancilla';
-      positions.push({ id: `${r}-${col}`, pos: [x, 0, z], type });
-    }
-  }
-  return positions;
-}
+// The real Eagle layout: 127 qubits on a heavy-hex lattice (see lib/heavyHex.js).
+const EAGLE = buildHeavyHex(0.62);
 
-function NarrativeChip({ zoomProgress }) {
-  const positions = useMemo(() => generateHeavyHexPositions(), []);
+function NarrativeChip() {
+  const positions = EAGLE.qubits;
   const meshRef = useRef();
   const groupRef = useRef();
   const dummy = useMemo(() => new THREE.Object3D(), []);
@@ -146,7 +136,7 @@ function NarrativeChip({ zoomProgress }) {
     if (!meshRef.current || !groupRef.current) return;
     const time = state.clock.getElapsedTime();
     
-    const scaleBoost = 1 + zoomProgress * 0.08;
+    const scaleBoost = 1 + scrollProgressMap.chip * 0.08;
     groupRef.current.scale.setScalar(scaleBoost);
 
     positions.forEach((p, i) => {
@@ -161,8 +151,18 @@ function NarrativeChip({ zoomProgress }) {
 
   return (
     <group ref={groupRef} rotation={[-0.2, 0, 0]}>
+      {EAGLE.edges.map(([a, b]) => {
+        const p = EAGLE.qubits[a].pos, q = EAGLE.qubits[b].pos;
+        const along = p[0] !== q[0];
+        return (
+          <mesh key={`${a}-${b}`} position={[(p[0] + q[0]) / 2, 0, (p[2] + q[2]) / 2]}>
+            <boxGeometry args={along ? [0.62, 0.02, 0.03] : [0.03, 0.02, 0.62]} />
+            <meshStandardMaterial color="#0a4a66" emissive="#00ccff" emissiveIntensity={0.35} />
+          </mesh>
+        );
+      })}
       <instancedMesh ref={meshRef} args={[null, null, positions.length]}>
-        <octahedronGeometry args={[0.2, 0]} />
+        <octahedronGeometry args={[0.15, 0]} />
         <meshStandardMaterial color="#00ccff" emissive="#00ccff" emissiveIntensity={2} metalness={0.9} roughness={0.1} />
       </instancedMesh>
 
@@ -181,7 +181,7 @@ function NarrativeChip({ zoomProgress }) {
 }
 
 // --- SCENE D: NarrativeGates ---
-function NarrativeGates({ zoomProgress }) {
+function NarrativeGates() {
   const group = useRef();
   const vectorRef = useRef();
   const targetVector = useMemo(() => new THREE.Vector3(), []);
@@ -190,7 +190,7 @@ function NarrativeGates({ zoomProgress }) {
     if (!group.current) return;
     const time = state.clock.getElapsedTime();
     
-    const scaleBoost = 1 + zoomProgress * 0.08;
+    const scaleBoost = 1 + scrollProgressMap.gates * 0.08;
     group.current.scale.setScalar(scaleBoost);
 
     group.current.rotation.y += 0.002;
@@ -241,7 +241,7 @@ function NarrativeGates({ zoomProgress }) {
 }
 
 // --- SCENE E: NarrativeTranspilation ---
-function NarrativeTranspilation({ zoomProgress }) {
+function NarrativeTranspilation() {
   const meshRef = useRef();
   const groupRef = useRef();
   const lightRef = useRef();
@@ -262,7 +262,7 @@ function NarrativeTranspilation({ zoomProgress }) {
     if (!meshRef.current || !lightRef.current || !groupRef.current) return;
     const time = state.clock.getElapsedTime();
 
-    const scaleBoost = 1 + zoomProgress * 0.08;
+    const scaleBoost = 1 + scrollProgressMap.transpilation * 0.08;
     groupRef.current.scale.setScalar(scaleBoost);
 
     const pathIndex = Math.floor(time * 2) % path.length;
@@ -357,12 +357,15 @@ function SceneSwitcher() {
     const targetY = THREE.MathUtils.lerp(keyframe.rest.y, keyframe.end.y, eased);
     const targetFov = THREE.MathUtils.lerp(keyframe.rest.fov, keyframe.end.fov, eased);
     
-    // Apply to camera — lerp at speed 0.08 for smooth follow
-    state.camera.position.z = THREE.MathUtils.lerp(state.camera.position.z, targetZ, 0.08);
-    state.camera.position.y = THREE.MathUtils.lerp(state.camera.position.y, targetY, 0.08);
+    // Follow the target smoothly. The blend factors depend on elapsed time, not on frame count,
+    // so the motion is the same at 30 fps and 144 fps.
+    const follow = 1 - Math.exp(-delta * 5);
+    const fade = 1 - Math.exp(-delta * 3.5);
+    state.camera.position.z = THREE.MathUtils.lerp(state.camera.position.z, targetZ, follow);
+    state.camera.position.y = THREE.MathUtils.lerp(state.camera.position.y, targetY, follow);
     
     if (Math.abs(state.camera.fov - targetFov) > 0.1) {
-      state.camera.fov = THREE.MathUtils.lerp(state.camera.fov, targetFov, 0.08);
+      state.camera.fov = THREE.MathUtils.lerp(state.camera.fov, targetFov, follow);
       state.camera.updateProjectionMatrix();
     }
     
@@ -374,9 +377,9 @@ function SceneSwitcher() {
       if (!group) return;
 
       const targetOpacity = id === layerId ? 1 : 0;
-      opacities.current[id] = THREE.MathUtils.lerp(opacities.current[id], targetOpacity, 0.05);
+      opacities.current[id] = THREE.MathUtils.lerp(opacities.current[id], targetOpacity, fade);
       
-      group.visible = opacities.current[id] > 0.001;
+      group.visible = opacities.current[id] > 0.02;
       
       group.rotation.y += delta * 0.08;
       // group.position.y = Math.sin(state.clock.getElapsedTime() * 0.4) * 0.12; // Removed to avoid conflict with zoom Y
@@ -394,21 +397,21 @@ function SceneSwitcher() {
   return (
     <>
       <group ref={el => groups.current.casing = el}>
-        <NarrativeCasing zoomProgress={scrollProgressMap.casing} />
+        <NarrativeCasing />
       </group>
       <group ref={el => groups.current.fridge = el}>
-        <NarrativeFridge zoomProgress={scrollProgressMap.fridge} />
+        <NarrativeFridge />
       </group>
       <group ref={el => groups.current.chip = el}>
-        <NarrativeChip zoomProgress={scrollProgressMap.chip} />
+        <NarrativeChip />
       </group>
       <group ref={el => groups.current.gates = el}>
-        <NarrativeGates zoomProgress={scrollProgressMap.gates} />
+        <NarrativeGates />
       </group>
       <group ref={el => groups.current.transpilation = el}>
-        <NarrativeTranspilation zoomProgress={scrollProgressMap.transpilation} />
+        <NarrativeTranspilation />
       </group>
-      <Environment preset="studio" />
+      <StudioEnv look="studio" />
     </>
   );
 }

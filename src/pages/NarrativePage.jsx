@@ -1,99 +1,81 @@
 // src/pages/NarrativePage.jsx
-import { useRef, useState } from 'react';
-import { useGSAP } from '@gsap/react';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { LAYERS, setActiveLayerId } from '../constants/layers';
+// One tall, empty scroll track drives everything. Each layer owns one viewport-height of it:
+// its text fades in, the camera zooms through its scene, the text fades out, the next layer takes over.
+// The text lives in a single fixed overlay, so two layers can never be on screen at once.
+import { useEffect, useRef, useState } from 'react';
+import { LAYERS, setActiveLayerId, setScrollProgress } from '../constants/layers';
 import NarrativeCanvas from '../components/NarrativeCanvas';
 import NarrativeSection from '../components/NarrativeSection';
 import styles from '../styles/narrative.module.css';
 
-// We update the module-level variable for the Canvas to read
-// But we also need local state for the progress dots UI
+const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+
 export default function NarrativePage() {
-  const containerRef = useRef(null);
-  const [activeId, setActiveId] = useState(LAYERS[0].id);
+  const blocks = useRef([]);
+  const [activeIndex, setActiveIndex] = useState(0);
 
-  useGSAP(() => {
-    const sections = gsap.utils.toArray('.qt-section');
-
-    // Initial state
-    gsap.set('.qt-title', { opacity: 0, y: 30 });
-    gsap.set('.qt-desc',  { opacity: 0, y: 20 });
-    gsap.set('.qt-btn',   { opacity: 0, y: 10 });
-
-    sections.forEach((section, i) => {
-      const layer = LAYERS[i];
-
-      // NEW: progress tracker for zoom
-      ScrollTrigger.create({
-        trigger: section,
-        start: 'top top',
-        end: 'bottom top',
-        scrub: true, // direct, no lag on zoom
-        onUpdate: (self) => {
-          import('../constants/layers').then(m => {
-            m.scrollProgressMap[layer.id] = self.progress;
-          });
-        },
+  useEffect(() => {
+    let raf = 0;
+    const update = () => {
+      raf = 0;
+      const pos = Math.max(0, window.scrollY) / window.innerHeight;          // in "layers"
+      const index = Math.min(LAYERS.length - 1, Math.floor(pos));
+      const local = Math.min(1, pos - index);
+      LAYERS.forEach((layer, i) => {
+        const p = i < index ? 1 : i > index ? 0 : local;
+        setScrollProgress(layer.id, p);
+        const el = blocks.current[i];
+        if (!el) return;
+        const fadeIn = i === 0 ? 1 : smooth(0.04, 0.2, p);
+        const fadeOut = i === LAYERS.length - 1 ? 1 : 1 - smooth(0.78, 0.94, p);
+        const o = i === index ? fadeIn * fadeOut : 0;
+        el.style.opacity = o;
+        el.style.transform = `translateY(${(1 - fadeIn) * 28 - (1 - fadeOut) * 28}px)`;
+        el.style.visibility = o > 0.01 ? 'visible' : 'hidden';
       });
-
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger:    section,
-          start:      'top top',
-          end:        'bottom top',
-          pin:        true,
-          pinSpacing: false,
-          scrub:      1.5,
-          onEnter:     () => { 
-            // Update module-level bridge
-            setActiveLayerId(layer.id);
-            setActiveId(layer.id);
-          },
-          onEnterBack: () => { 
-            setActiveLayerId(layer.id);
-            setActiveId(layer.id);
-          },
-        }
-      });
-
-      tl.to(section.querySelector('.qt-title'), 
-            { opacity: 1, y: 0, duration: 0.4 }, 0)
-        .to(section.querySelector('.qt-desc'),  
-            { opacity: 1, y: 0, duration: 0.4 }, 0.15)
-        .to(section.querySelector('.qt-btn'),   
-            { opacity: 1, y: 0, duration: 0.3 }, 0.3);
-    });
-
-    return () => {
-      ScrollTrigger.getAll().forEach(t => t.kill());
+      setActiveLayerId(LAYERS[index].id);
+      setActiveIndex(index);
     };
-  }, { scope: containerRef, revertOnUpdate: true });
+    const onScroll = () => { if (!raf) raf = requestAnimationFrame(update); };
+    update();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    return () => { window.removeEventListener('scroll', onScroll); window.removeEventListener('resize', onScroll); cancelAnimationFrame(raf); };
+  }, []);
+
+  const goTo = (i) => window.scrollTo({ top: (i + 0.35) * window.innerHeight, behavior: 'smooth' });
 
   return (
     <main>
       <NarrativeCanvas />
-      
-      <div className={styles.progressDots}>
-        {LAYERS.map(layer => (
-          <div 
-            key={layer.id} 
-            className={`${styles.dot} ${activeId === layer.id ? styles.dotActive : ''}`}
+
+      <div className={styles.brand}>QuantumTrace <span>· Qant Labs</span></div>
+      <div className={styles.layerCounter}>
+        {String(activeIndex + 1).padStart(2, '0')} / {String(LAYERS.length).padStart(2, '0')}
+      </div>
+
+      <nav className={styles.progressDots} aria-label="Layers">
+        {LAYERS.map((layer, i) => (
+          <button
+            key={layer.id}
+            className={`${styles.dot} ${activeIndex === i ? styles.dotActive : ''}`}
+            onClick={() => goTo(i)}
+            aria-label={layer.scrollTitle}
+            title={layer.scrollTitle}
           />
+        ))}
+      </nav>
+
+      <div className={styles.overlay}>
+        {LAYERS.map((layer, i) => (
+          <NarrativeSection key={layer.id} layer={layer} ref={(el) => { blocks.current[i] = el; }} />
         ))}
       </div>
 
-      <div ref={containerRef} className={styles.scrollContainer}>
-        {LAYERS.map((layer, i) => (
-          <NarrativeSection 
-            key={layer.id} 
-            layer={layer} 
-            index={i} 
-            total={LAYERS.length} 
-          />
-        ))}
-      </div>
+      <div className={`${styles.scrollHint} ${activeIndex === 0 ? '' : styles.scrollHintHidden}`}>scroll to descend</div>
+
+      {/* the scroll track: one viewport per layer, plus one so the last layer gets its full zoom */}
+      <div style={{ height: `${(LAYERS.length + 1) * 100}vh` }} />
     </main>
   );
 }
