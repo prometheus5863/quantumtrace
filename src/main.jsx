@@ -1,19 +1,16 @@
 // src/main.jsx
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { useGSAP } from '@gsap/react';
+import { HashRouter } from 'react-router-dom';
 import App from './App';
 import './styles/global.css';
 
-gsap.registerPlugin(ScrollTrigger, useGSAP);
-
+// HashRouter keeps every route working on static hosts (GitHub Pages, a plain file server)
+// where a refresh on /sim/chip would otherwise be a 404.
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <BrowserRouter>
+    <HashRouter>
       <App />
-    </BrowserRouter>
+    </HashRouter>
   </StrictMode>
 );

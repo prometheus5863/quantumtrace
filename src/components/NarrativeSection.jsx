@@ -1,30 +1,25 @@
 // src/components/NarrativeSection.jsx
+import { forwardRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from '../styles/narrative.module.css';
 
-export default function NarrativeSection({ layer, index, total }) {
+const NarrativeSection = forwardRef(function NarrativeSection({ layer }, ref) {
   const navigate = useNavigate();
-  const counter = `${String(index + 1).padStart(2, '0')} / ${String(total).padStart(2, '0')}`;
-
   return (
-    <section className={`qt-section ${styles.section}`}>
+    <section ref={ref} className={styles.section} style={{ '--accent': layer.particleColor }}>
       <div className={styles.domainBadge}>{layer.domain}</div>
-      <div className={styles.layerCounter}>{counter}</div>
-      
-      <h1 className={`qt-title ${styles.title}`}>
-        {layer.scrollTitle}
-      </h1>
-      
-      <p className={`qt-desc ${styles.desc}`}>
-        {layer.scrollDesc}
-      </p>
-      
-      <button 
-        className={`qt-btn ${styles.learnMoreBtn}`}
-        onClick={() => navigate(layer.route)}
-      >
-        Explore Simulation
+      <h1 className={styles.title}>{layer.scrollTitle}</h1>
+      <p className={styles.desc}>{layer.scrollDesc}</p>
+      <ul className={styles.facts}>
+        {layer.facts.map(([value, label]) => (
+          <li key={label}><strong>{value}</strong><span>{label}</span></li>
+        ))}
+      </ul>
+      <button className={styles.learnMoreBtn} onClick={() => navigate(layer.route)}>
+        Explore simulation
       </button>
     </section>
   );
-}
+});
+
+export default NarrativeSection;

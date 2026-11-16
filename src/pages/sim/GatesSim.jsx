@@ -1,8 +1,10 @@
 // src/pages/sim/GatesSim.jsx
 import { useRef, useState, useMemo, useCallback } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Environment, Text, Sphere } from '@react-three/drei';
+import { OrbitControls, Html, Sphere } from '@react-three/drei';
 import * as THREE from 'three';
+import StudioEnv from '../../components/StudioEnv';
+import { GATES, KET0, applyGate, describe } from '../../lib/bloch';
 
 function BlochSphere({ stateVector }) {
   const vectorRef = useRef();
@@ -65,10 +67,10 @@ function BlochSphere({ stateVector }) {
       </line>
 
       {/* Labels */}
-      <Text position={[0, 3.5, 0]} fontSize={0.4} color="#ffffff">|0⟩</Text>
-      <Text position={[0, -3.5, 0]} fontSize={0.4} color="#ffffff">|1⟩</Text>
-      <Text position={[3.5, 0, 0]} fontSize={0.4} color="#ffffff">|+⟩</Text>
-      <Text position={[-3.5, 0, 0]} fontSize={0.4} color="#ffffff">|-⟩</Text>
+      <Html position={[0, 3.5, 0]} center style={{ color:'#ffffff', fontFamily:'monospace', fontSize:15, pointerEvents:'none', whiteSpace:'nowrap' }}>|0⟩</Html>
+      <Html position={[0, -3.5, 0]} center style={{ color:'#ffffff', fontFamily:'monospace', fontSize:15, pointerEvents:'none', whiteSpace:'nowrap' }}>|1⟩</Html>
+      <Html position={[3.5, 0, 0]} center style={{ color:'#ffffff', fontFamily:'monospace', fontSize:15, pointerEvents:'none', whiteSpace:'nowrap' }}>|+⟩</Html>
+      <Html position={[-3.5, 0, 0]} center style={{ color:'#ffffff', fontFamily:'monospace', fontSize:15, pointerEvents:'none', whiteSpace:'nowrap' }}>|-⟩</Html>
     </group>
   );
 }
@@ -106,7 +108,7 @@ function GatesScene({ stateVector }) {
       <ambientLight intensity={0.2} />
       <pointLight position={[10, 10, 10]} intensity={1} color="#00d4ff" />
       <pointLight position={[-10, -10, -10]} intensity={0.5} color="#ff00ff" />
-      <Environment preset="night" />
+      <StudioEnv look="night" />
       
       <BlochSphere stateVector={stateVector} />
       <TransmonQubits />
@@ -116,7 +118,7 @@ function GatesScene({ stateVector }) {
   );
 }
 
-function ControlPanel({ stateVector, onApplyGate }) {
+function ControlPanel({ stateVector, bloch, history, onApplyGate }) {
   return (
     <div style={{ position:'fixed', bottom:32, left:32, padding:'22px 26px',
       background:'rgba(0,5,20,0.85)', backdropFilter:'blur(20px)',
@@ -138,23 +140,21 @@ function ControlPanel({ stateVector, onApplyGate }) {
           <span style={{ fontSize:10, color:'rgba(255,255,255,0.5)' }}>PHI (φ)</span>
           <span style={{ fontSize:10, color:'#00d4ff' }}>{stateVector.phi.toFixed(4)} rad</span>
         </div>
-        <div style={{ display:'flex', justifyContent:'space-between' }}>
-          <span style={{ fontSize:10, color:'rgba(255,255,255,0.5)' }}>COORDINATES</span>
-          <span style={{ fontSize:10, color:'#00ff88' }}>
-            ({Math.sin(stateVector.theta)*Math.cos(stateVector.phi).toFixed(2)}, 
-             {Math.cos(stateVector.theta).toFixed(2)}, 
-             {Math.sin(stateVector.theta)*Math.sin(stateVector.phi).toFixed(2)})
-          </span>
+        <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
+          <span style={{ fontSize:10, color:'rgba(255,255,255,0.5)' }}>BLOCH VECTOR (x, y, z)</span>
+          <span style={{ fontSize:10, color:'#00ff88' }}>({bloch.map((c) => c.toFixed(2)).join(', ')})</span>
+        </div>
+        <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}>
+          <span style={{ fontSize:10, color:'rgba(255,255,255,0.5)' }}>P(|0⟩) / P(|1⟩)</span>
+          <span style={{ fontSize:10, color:'#00d4ff' }}>{(stateVector.p0 * 100).toFixed(1)}% / {(stateVector.p1 * 100).toFixed(1)}%</span>
+        </div>
+        <div style={{ height:4, background:'rgba(255,0,170,0.5)', borderRadius:2 }}>
+          <div style={{ width:`${stateVector.p0 * 100}%`, height:'100%', background:'#00d4ff', borderRadius:2, transition:'width 0.3s ease' }} />
         </div>
       </div>
 
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
-        {[
-          { name: 'X Gate', gate: 'X', desc: 'Pauli-X (NOT)' },
-          { name: 'H Gate', gate: 'H', desc: 'Hadamard' },
-          { name: 'Z Gate', gate: 'Z', desc: 'Pauli-Z' },
-          { name: 'T Gate', gate: 'T', desc: 'T-Gate (π/4)' }
-        ].map((g) => (
+        {Object.entries(GATES).map(([gate, g]) => ({ name: `${g.label} gate`, gate, desc: g.desc })).map((g) => (
           <button key={g.gate} onClick={() => onApplyGate(g.gate)} style={{
             padding:'12px 8px', background:'rgba(0,212,255,0.12)',
             border:'1px solid rgba(0,212,255,0.4)', borderRadius:6,
@@ -166,57 +166,33 @@ function ControlPanel({ stateVector, onApplyGate }) {
         ))}
       </div>
 
-      <div style={{ marginTop:16, display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
-        {[['FIDELITY','0.9998'],['DECOHERENCE','LOW'],['PULSE TYPE','DRAG']].map(([label,val],i)=>(
-          <div key={i} style={{ background:'rgba(0,0,0,0.2)', padding:'8px 10px',
-            borderRadius:4, gridColumn: i===2 ? 'span 2' : undefined }}>
-            <div style={{ fontSize:8, color:'rgba(255,255,255,0.4)', letterSpacing:'0.05em', marginBottom:2 }}>{label}</div>
-            <div style={{ fontSize:10, color:'#00ff88', letterSpacing:'0.05em' }}>{val}</div>
-          </div>
-        ))}
+      <div style={{ marginTop:14, display:'flex', alignItems:'center', gap:10 }}>
+        <div style={{ flex:1, fontSize:10, color:'rgba(255,255,255,0.5)', letterSpacing:'0.08em', minHeight:14 }}>
+          {history.length ? `|0⟩ → ${history.join(' → ')}` : 'Start: |0⟩. Try H, then S, then H.'}
+        </div>
+        <button onClick={() => onApplyGate('RESET')} style={{ padding:'6px 10px', background:'transparent',
+          border:'1px solid rgba(255,255,255,0.25)', borderRadius:4, color:'rgba(255,255,255,0.7)',
+          fontSize:9, letterSpacing:'0.1em', cursor:'pointer', fontFamily:'monospace' }}>RESET</button>
       </div>
     </div>
   );
 }
 
 export default function GatesSim() {
-  const [stateVector, setStateVector] = useState({ theta: 0, phi: 0 });
-  
+  // The state is the Bloch vector itself; every gate is an exact rotation of it (see lib/bloch.js).
+  const [bloch, setBloch] = useState(KET0);
+  const [history, setHistory] = useState([]);
+  const stateVector = useMemo(() => describe(bloch), [bloch]);
+
   const handleApplyGate = useCallback((gate) => {
-    setStateVector(prev => {
-      let { theta, phi } = prev;
-      switch (gate) {
-        case 'X':
-          theta = Math.PI - theta;
-          phi = -phi;
-          break;
-        case 'H':
-          // Simplified Hadamard rotation for visualization
-          if (theta === 0) theta = Math.PI / 2;
-          else if (theta === Math.PI) { theta = Math.PI / 2; phi = Math.PI; }
-          else if (theta === Math.PI / 2 && phi === 0) theta = 0;
-          else if (theta === Math.PI / 2 && phi === Math.PI) theta = Math.PI;
-          else {
-            theta = Math.PI / 2;
-            phi = (phi + Math.PI) % (2 * Math.PI);
-          }
-          break;
-        case 'Z':
-          phi = (phi + Math.PI) % (2 * Math.PI);
-          break;
-        case 'T':
-          phi = (phi + Math.PI / 4) % (2 * Math.PI);
-          break;
-        default:
-          break;
-      }
-      return { theta, phi };
-    });
+    if (gate === 'RESET') { setBloch(KET0); setHistory([]); return; }
+    setBloch((v) => applyGate(gate, v));
+    setHistory((h) => [...h, gate].slice(-12));
   }, []);
 
   return (
     <div style={{ width:'100vw', height:'100vh', background:'#000', position:'relative', overflow:'hidden' }}>
-      <button onClick={() => window.history.back()} style={{
+      <button onClick={() => { window.location.hash = '#/'; }} style={{
         position:'fixed', top:16, left:16, zIndex:200, padding:'7px 16px',
         background:'transparent', border:'1px solid rgba(255,255,255,0.15)',
         borderRadius:2, color:'rgba(255,255,255,0.5)', fontSize:'0.75rem',
@@ -228,7 +204,7 @@ export default function GatesSim() {
         <GatesScene stateVector={stateVector} />
       </Canvas>
       
-      <ControlPanel stateVector={stateVector} onApplyGate={handleApplyGate} />
+      <ControlPanel stateVector={stateVector} bloch={bloch} history={history} onApplyGate={handleApplyGate} />
     </div>
   );
 }

@@ -1,8 +1,9 @@
 // src/pages/sim/CasingSim.jsx
 import { useRef, useState, useEffect, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { RoundedBox, Environment, OrbitControls, MeshTransmissionMaterial } from '@react-three/drei';
+import { RoundedBox, OrbitControls, MeshTransmissionMaterial } from '@react-three/drei';
 import * as THREE from 'three';
+import StudioEnv from '../../components/StudioEnv';
 
 function CasingScene({ thermalShielding, powerState }) {
   const shieldingRef = useRef(thermalShielding);
@@ -114,7 +115,7 @@ function CasingScene({ thermalShielding, powerState }) {
         </mesh>
       </group>
       
-      <Environment preset="studio" />
+      <StudioEnv look="studio" />
       <OrbitControls enablePan={false} minDistance={3} maxDistance={12}
         autoRotate={powerState === 'standby'} autoRotateSpeed={0.4} />
     </>
@@ -122,8 +123,11 @@ function CasingScene({ thermalShielding, powerState }) {
 }
 
 function ControlPanel({ thermalShielding, setThermalShielding, powerState, setPowerState }) {
-  const displayTemp = (15 + thermalShielding * 2.8).toFixed(1);
-  const tempColorNorm = thermalShielding / 100;
+  // Illustrative model: with every shield in place the chip sits at 15 mK; with none it warms to room temperature.
+  // Interpolated on a log scale, since each shield stage cuts the heat load by orders of magnitude.
+  const kelvin = 0.015 * Math.pow(300 / 0.015, 1 - thermalShielding / 100);
+  const displayTemp = kelvin >= 1 ? `${kelvin.toFixed(kelvin >= 10 ? 0 : 1)} K` : `${(kelvin * 1000).toFixed(0)} mK`;
+  const tempColorNorm = 1 - thermalShielding / 100;
   const r = Math.round(0 + tempColorNorm * 255);
   const g = Math.round(255 - tempColorNorm * 153);
   const b = Math.round(255 - tempColorNorm * 255);
@@ -159,8 +163,8 @@ function ControlPanel({ thermalShielding, setThermalShielding, powerState, setPo
           SYSTEM: {powerState.toUpperCase()}
         </button>
         <div style={{ marginTop:16, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-          <span style={{ fontSize:11, color:'#8899aa' }}>TEMP</span>
-          <span style={{ fontSize:12, color:tempColor, fontWeight:'bold' }}>{displayTemp} mK</span>
+          <span style={{ fontSize:11, color:'#8899aa' }}>CHIP TEMP (MODEL)</span>
+          <span style={{ fontSize:12, color:tempColor, fontWeight:'bold' }}>{displayTemp}</span>
         </div>
       </div>
     </>
@@ -173,7 +177,7 @@ export default function CasingSim() {
   
   return (
     <div style={{ width:'100vw', height:'100vh', background:'#000010', position:'relative', overflow:'hidden' }}>
-      <button onClick={() => window.history.back()} style={{
+      <button onClick={() => { window.location.hash = '#/'; }} style={{
         position:'fixed', top:16, left:16, zIndex:200, padding:'7px 16px',
         background:'transparent', border:'1px solid rgba(255,255,255,0.15)',
         borderRadius:2, color:'rgba(255,255,255,0.5)', fontSize:'0.75rem',
